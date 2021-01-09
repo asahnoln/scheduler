@@ -16,15 +16,48 @@ def print_people(people: list):
         print(person)
 
 
+def input_times(schedule: list):
+    while True:
+        print('\tFrom? (Enter to skip) ', end='')
+        fromTime = input()
+
+        if not fromTime:
+            break
+
+        fromTime = time.fromisoformat(fromTime)
+
+        toTime = ''
+        while not toTime:
+            print('\tTo? ', end='')
+            toTime = input()
+            print()
+
+        toTime = time.fromisoformat(toTime)
+
+        schedule.append({'from': str(fromTime), 'to': str(toTime)});
+
+
+def input_schedule(person: dict):
+    schedule = {}
+    for (key, day) in enumerate(day_name):
+        print(f'\tSchedule of {person["name"]} for {day}:')
+        schedule[key] = []
+        input_times(schedule[key])
+    person['schedule'] = schedule
+
+
 def input_people(people: list):
     while True:
-        print('Person name? (Enter to skip)', end='')
+        print('Person name? (Enter to skip) ', end='')
         name = input()
 
         if not name:
             break
 
-        people.append({'name': name})
+        person = {'name': name}
+        input_schedule(person)
+
+        people.append(person)
 
 
 DB_FILE_PATH = './db.json'
@@ -52,8 +85,6 @@ print(people)
 with open(DB_FILE_PATH, 'w') as fp:
     json.dump(people, fp)
 
-for d in enumerate(day_name):
-    print(d)
 
 # cal = LocaleTextCalendar()
 #
