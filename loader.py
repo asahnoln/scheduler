@@ -1,8 +1,8 @@
+import json
+import sys
 from calendar import day_name
 from datetime import time
-import json
 from json.decoder import JSONDecodeError
-import sys
 
 
 class Processor:
