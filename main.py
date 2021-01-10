@@ -1,90 +1,33 @@
 #!python3.9
 
-import json
+import locale
 from datetime import date, time
 from calendar import LocaleTextCalendar, Calendar, day_name
-from json.decoder import JSONDecodeError
-import locale
-import sys
+from parser import Source
+from schedule import BusyRange, Schedule
+import pprint
 
 locale.setlocale(locale.LC_ALL, '')
 
+#source = Source()
+#people = source.load()
+#print(people)
+#source.save(people)
 
-def print_people(people: list):
-    print('People in the db.json:')
-    for person in people:
-        print(person)
+schedule = Schedule()
+schedule.append(BusyRange('09:00', '13:00'))
+schedule.append(BusyRange('18:00', '20:00'))
 
+schedule2 = Schedule()
+schedule2.append(BusyRange('11:00', '16:00'))
+schedule2.append(BusyRange('20:00', '21:00'))
+schedule2.append(BusyRange('22:00', '23:00'))
 
-def input_times(schedule: list):
-    while True:
-        print('\tFrom? (Enter to skip) ', end='')
-        fromTime = input()
+print(schedule)
+print(schedule2)
+print(schedule.add(schedule2))
 
-        if not fromTime:
-            break
-
-        fromTime = time.fromisoformat(fromTime)
-
-        toTime = ''
-        while not toTime:
-            print('\tTo? ', end='')
-            toTime = input()
-            print()
-
-        toTime = time.fromisoformat(toTime)
-
-        schedule.append({'from': str(fromTime), 'to': str(toTime)});
-
-
-def input_schedule(person: dict):
-    schedule = {}
-    for (key, day) in enumerate(day_name):
-        print(f'\tSchedule of {person["name"]} for {day}:')
-        schedule[key] = []
-        input_times(schedule[key])
-    person['schedule'] = schedule
-
-
-def input_people(people: list):
-    while True:
-        print('Person name? (Enter to skip) ', end='')
-        name = input()
-
-        if not name:
-            break
-
-        person = {'name': name}
-        input_schedule(person)
-
-        people.append(person)
-
-
-DB_FILE_PATH = './db.json'
-people = []
-
-# Create the file if does not exist (thus 'append' attribute)
-with open(DB_FILE_PATH, 'a+') as fp:
-    try:
-        # Append attribute - end of file, return caret
-        fp.seek(0)
-        people = json.load(fp)
-    except JSONDecodeError as exc:
-        print(exc)
-        print('Format is incorrect. Truncate db file? Y for truncate, n for exit the program. Y/n ', end='')
-        answer = input()
-        if answer != 'Y':
-            sys.exit()
-
-print_people(people)
-print()
-input_people(people)
-
-print(people)
-
-with open(DB_FILE_PATH, 'w') as fp:
-    json.dump(people, fp)
-
+print(repr(schedule))
 
 # cal = LocaleTextCalendar()
 #
