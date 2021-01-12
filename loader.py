@@ -18,22 +18,22 @@ class Processor:
     def input_times(self, schedule: list):
         while True:
             print('\tFrom? (Enter to skip) ', end='')
-            fromTime = input()
+            from_time = input()
 
-            if not fromTime:
+            if not from_time:
                 break
 
-            fromTime = time.fromisoformat(fromTime)
+            from_time = time.fromisoformat(from_time)
 
-            toTime = ''
-            while not toTime:
+            to_time = ''
+            while not to_time:
                 print('\tTo? ', end='')
-                toTime = input()
+                to_time = input()
                 print()
 
-            toTime = time.fromisoformat(toTime)
+            to_time = time.fromisoformat(to_time)
 
-            schedule.append({'from': str(fromTime), 'to': str(toTime)})
+            schedule.append({'from': str(from_time), 'to': str(to_time)})
 
     def input_schedule(self, person: dict):
         schedule = {}
