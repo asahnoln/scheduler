@@ -31,8 +31,7 @@ class Schedule:
     def __init__(self, ranges: RangeList = None) -> None:
         if not ranges:
             ranges = []
-        self._ranges = ranges
-        self._convert_ranges()
+        self._ranges = self._convert_ranges(ranges)
 
     def __str__(self) -> str:
         text = ''
@@ -75,9 +74,11 @@ class Schedule:
 
         return Schedule(new_ranges)
 
-    def _convert_ranges(self):
-        for key, busy_range in enumerate(self._ranges):
-            if isinstance(busy_range, BusyRange):
-                continue
-            self._ranges[key] = BusyRange(*busy_range)
+    def _convert_ranges(self, ranges: RangeList) -> list[BusyRange]:
+        converted_ranges = []
+        for busy_range in ranges:
+            if not isinstance(busy_range, BusyRange):
+                busy_range = BusyRange(*busy_range)
+            converted_ranges.append(busy_range)
+        return converted_ranges
 
