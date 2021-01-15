@@ -1,6 +1,7 @@
 #!/usr/bin/python3.9
 
 from loader import Source
+from schedule import Schedule
 import locale
 import argparse
 import datetime
@@ -33,9 +34,11 @@ args = parser.parse_args()
 source = Source(args.db)
 people = source.load()
 
+# Show DB
 if args.list:
     pprint.pprint(people)
 
+# Delete person from DB
 if args.delete:
     for key, person in enumerate(people):
         if person['name'] == args.delete:
@@ -46,7 +49,7 @@ if args.delete:
     else:
         print('Not found')
 
-
+# Add new person or edit existing
 if args.person:
     new_person = {'name': args.person, 'schedule': {}}
     for key, day in enumerate(days):
@@ -67,4 +70,22 @@ if args.person:
     pprint.pprint(people)
     print('Saved!')
 
+# Show schedule
+if args.show:
+    for key, day in enumerate(days): 
+        mix_schedule = Schedule()
+        for person in people:
+            if person['name'] not in args.show:
+                continue
+
+            try:
+                ranges = person['schedule'][str(key)]
+                if ranges:
+                    schedule = Schedule(ranges)
+                    mix_schedule += schedule
+            except KeyError as e:
+                print(e)
+                print(f'No schedule for {day} of {person["name"]}')
+
+        print(f'{day}\n{mix_schedule}')
 
