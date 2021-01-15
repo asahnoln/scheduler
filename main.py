@@ -1,37 +1,34 @@
-#!python3.9
+#!/usr/bin/python3.9
 
+from loader import Source
 import locale
-from schedule import BusyRange, Schedule
-
-# To check repr 
+import argparse
 import datetime
+import calendar
+import pprint
 
-locale.setlocale(locale.LC_ALL, '')
+#locale.setlocale(locale.LC_ALL, '')
+# TODO: Possible bug - I want days in english, what happens if I don't set locale?
 
-# Append ranges
-schedule = Schedule()
-schedule.append(BusyRange('09:00', '13:00'))
-schedule.append(('18:00', '20:00'))
+parser = argparse.ArgumentParser(description='Tool to figure out sum of busy schedules from different people for a week')
 
-# Create with ranges and append (check mix of methods)
-schedule2 = Schedule([
-    BusyRange('11:00', '16:00'),
-    ('20:00', '21:00'),
-    ])
-schedule2.append(('22:00', '23:00'))
+parser.add_argument('db', help='Path to a json file with data')
+parser.add_argument('-l', '--list', help='Show current list of people in db', action='store_true')
 
-# Check __str__
-print(schedule)
-print(schedule2)
+parser.add_argument('-s', '--show', help='Show busy schedule for people', nargs='+', metavar='NAME')
 
-# Use method
-print(schedule.add(schedule2))
+time_group = parser.add_argument_group('time editing')
+time_group.add_argument('-p', '--person', help='Add new person or edit an existing one in the db')
 
-# Use overloaded operator
-print(schedule + schedule2)
+for key, day in enumerate(calendar.day_abbr):
+    time_group.add_argument(f'--{day.lower()}', help=f'Busy time range for {calendar.day_name[key]}', nargs=2, action='append', metavar=('FROM', 'TO'))
 
-# Check __repr__
-print(repr(schedule))
+args = parser.parse_args()
 
-schedule_mix = eval(repr(schedule + schedule2))
-print(schedule_mix)
+source = Source(args.db)
+data = source.load()
+
+if args.list:
+    pprint.pprint(data)
+
+print(args)

@@ -58,13 +58,14 @@ class Processor:
 
 
 class Source:
-    DB_FILE_PATH = './db.json'
+    def __init__(self, path: str) -> None:
+        self._path = path
 
-    def load(self) -> list:
+    def load(self) -> list[dict]:
         people = []
 
         # Create the file if does not exist (thus 'append' attribute)
-        with open(self.DB_FILE_PATH, 'a+') as fp:
+        with open(self._path, 'a+') as fp:
             try:
                 # Append attribute - end of file, return caret
                 fp.seek(0)
@@ -80,5 +81,5 @@ class Source:
         return people
 
     def save(self, people: list):
-        with open(self.DB_FILE_PATH, 'w') as fp:
+        with open(self._path, 'w') as fp:
             json.dump(people, fp)
