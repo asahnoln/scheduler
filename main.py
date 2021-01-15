@@ -11,14 +11,14 @@ locale.setlocale(locale.LC_ALL, '')
 # Append ranges
 schedule = Schedule()
 schedule.append(BusyRange('09:00', '13:00'))
-schedule.append(BusyRange('18:00', '20:00'))
+schedule.append(('18:00', '20:00'))
 
 # Create with ranges and append (check mix of methods)
 schedule2 = Schedule([
     BusyRange('11:00', '16:00'),
-    BusyRange('20:00', '21:00'),
+    ('20:00', '21:00'),
     ])
-schedule2.append(BusyRange('22:00', '23:00'))
+schedule2.append(('22:00', '23:00'))
 
 # Check __str__
 print(schedule)

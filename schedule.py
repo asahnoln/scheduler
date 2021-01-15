@@ -25,12 +25,14 @@ class BusyRange:
 class Schedule:
     '''Data for storing and manipulating several busy time ranges.
     '''
-    RangeList = list[BusyRange]
+    Range = Union[BusyRange, tuple[BusyRange.TimeType, BusyRange.TimeType]]
+    RangeList = list[Range]
 
     def __init__(self, ranges: RangeList = None) -> None:
         if not ranges:
             ranges = []
         self._ranges = ranges
+        self._convert_ranges()
 
     def __str__(self) -> str:
         text = ''
@@ -45,8 +47,11 @@ class Schedule:
     def __add__(self, schedule: Schedule) -> Schedule:
         return self.add(schedule)
 
-    def append(self, busy_range: BusyRange) -> None:
+    def append(self, busy_range: Range) -> None:
         '''Append busy range to current range list.'''
+
+        if not isinstance(busy_range, BusyRange):
+            busy_range = BusyRange(*busy_range)
 
         self._ranges.append(busy_range)
 
@@ -69,3 +74,10 @@ class Schedule:
                 new_from_time = None
 
         return Schedule(new_ranges)
+
+    def _convert_ranges(self):
+        for key, busy_range in enumerate(self._ranges):
+            if isinstance(busy_range, BusyRange):
+                continue
+            self._ranges[key] = BusyRange(*busy_range)
+
