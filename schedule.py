@@ -54,6 +54,28 @@ class Schedule:
 
         self._ranges.append(busy_range)
 
+    # TODO: New method from packing minutes
+    #def add(self, schedule: Schedule) -> Schedule:
+    #    '''Produce a new schedule by adding another schedule to current schedule.'''
+    #    
+    #    return Schedule()
+
+    def _get_all_minutes(self) -> list[tuple[int, int]]:
+        minutes = []
+        for busy_range in self._ranges:
+            start = [int(x) for x in str(busy_range.from_time).split(':')]
+            end = [int(x) for x in str(busy_range.to_time).split(':')]
+
+            for h in range(start[0], end[0] + 1):
+                for m in range(0, 61):
+                    if h == start[0] and m < start[1]:
+                        continue
+                    if h == end[0] and m > end[1]:
+                        break
+
+                    minutes.append((h, m))
+        return minutes
+
     def add(self, schedule: Schedule) -> Schedule:
         '''Produce a new schedule by adding another schedule to current schedule.'''
 
