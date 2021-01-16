@@ -17,6 +17,7 @@ parser = argparse.ArgumentParser(description='Tool to figure out sum of busy sch
 
 parser.add_argument('db', help='Path to a json file with data')
 parser.add_argument('-l', '--list', help='Show current list of people in db', action='store_true')
+parser.add_argument('-v', '--verbose', help='Verbosity for some of the output commands', action='count', default=0)
 
 parser.add_argument('-s', '--show', help='Show busy schedule for people', nargs='+', metavar='NAME')
 
@@ -36,7 +37,10 @@ people = source.load()
 
 # Show DB
 if args.list:
-    pprint.pprint(people)
+    if args.verbose >= 1:
+        pprint.pprint(people)
+    elif args.verbose == 0:
+        [print(person['name']) for person in people]
 
 # Delete person from DB
 if args.delete:
@@ -84,7 +88,6 @@ if args.show:
                     schedule = Schedule(ranges)
                     mix_schedule += schedule
             except KeyError as e:
-                print(e)
                 print(f'No schedule for {day} of {person["name"]}')
 
         print(f'{day}\n{mix_schedule}')
