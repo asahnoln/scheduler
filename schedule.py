@@ -54,11 +54,29 @@ class Schedule:
 
         self._ranges.append(busy_range)
 
-    # TODO: New method from packing minutes
-    #def add(self, schedule: Schedule) -> Schedule:
-    #    '''Produce a new schedule by adding another schedule to current schedule.'''
-    #    
-    #    return Schedule()
+    # New method from packing minutes
+    def add(self, schedule: Schedule) -> Schedule:
+        '''Produce a new schedule by adding another schedule to current schedule.'''
+        all_minutes = sorted(set(self._get_all_minutes() + schedule._get_all_minutes()))
+        new_schedule = Schedule()
+
+        start = None
+        end = None
+        for h, m in all_minutes:
+            if not start:
+                start = (h, m)
+                continue
+
+            if end and ((m - end[1]) % 60 > 1 or (h - end[0]) > 1):
+                new_schedule.append((time(*start), time(*end)))
+                start = (h, m)
+
+            end = (h, m)
+
+        if start and end:
+            new_schedule.append((time(*start), time(*end)))
+        
+        return new_schedule
 
     def _get_all_minutes(self) -> list[tuple[int, int]]:
         minutes = []
@@ -67,7 +85,7 @@ class Schedule:
             end = [int(x) for x in str(busy_range.to_time).split(':')]
 
             for h in range(start[0], end[0] + 1):
-                for m in range(0, 61):
+                for m in range(0, 60):
                     if h == start[0] and m < start[1]:
                         continue
                     if h == end[0] and m > end[1]:
@@ -76,25 +94,26 @@ class Schedule:
                     minutes.append((h, m))
         return minutes
 
-    def add(self, schedule: Schedule) -> Schedule:
-        '''Produce a new schedule by adding another schedule to current schedule.'''
+    # Old method with checking crosses
+    # def add(self, schedule: Schedule) -> Schedule:
+    #     '''Produce a new schedule by adding another schedule to current schedule.'''
 
-        all_ranges = self._ranges.copy()
-        all_ranges.extend(schedule._ranges)
-        all_ranges.sort(key=lambda busy_range: busy_range.from_time)
+    #     all_ranges = self._ranges.copy()
+    #     all_ranges.extend(schedule._ranges)
+    #     all_ranges.sort(key=lambda busy_range: busy_range.from_time)
 
-        # Linear search for crossings of time ranges
-        new_ranges = []
-        new_from_time = None
-        for key, busy_range in enumerate(all_ranges):
-            if not new_from_time:
-                new_from_time = busy_range.from_time
+    #     # Linear search for crossings of time ranges
+    #     new_ranges = []
+    #     new_from_time = None
+    #     for key, busy_range in enumerate(all_ranges):
+    #         if not new_from_time:
+    #             new_from_time = busy_range.from_time
 
-            if key == len(all_ranges) - 1 or busy_range.to_time < all_ranges[key + 1].from_time:
-                new_ranges.append(BusyRange(new_from_time, busy_range.to_time))
-                new_from_time = None
+    #         if key == len(all_ranges) - 1 or busy_range.to_time < all_ranges[key + 1].from_time:
+    #             new_ranges.append(BusyRange(new_from_time, busy_range.to_time))
+    #             new_from_time = None
 
-        return Schedule(new_ranges)
+    #     return Schedule(new_ranges)
 
     def _convert_ranges(self, ranges: RangeList) -> list[BusyRange]:
         converted_ranges = []
