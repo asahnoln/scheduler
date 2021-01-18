@@ -1,54 +1,118 @@
-from calendar import day_name
-from datetime import time
+import argparse
+import calendar
+import pprint
+from typing import Union
+from schedule import Schedule
+
 
 class Processor:
 
-    def __init__(self, people=[]) -> None:
-        self.people = people
+    def __init__(self) -> None:
+        self._days = tuple([d.lower() for d in calendar.day_abbr])
+        self._people = []
 
-    def print_people(self):
-        print('People in the db.json:')
-        for person in self.people:
-            print(person)
+    def parse_args(self) -> argparse.Namespace:
+        '''Parse script arguments'''
 
-    def input_times(self, schedule: list):
-        while True:
-            print('\tFrom? (Enter to skip) ', end='')
-            from_time = input()
+        parser = argparse.ArgumentParser(
+            description='Tool to figure out sum of busy schedules from different people for a week')
 
-            if not from_time:
-                break
+        parser.add_argument('db', help='Path to a json file with data')
+        parser.add_argument(
+            '-l', '--list', help='Show current list of people in db', action='store_true')
+        parser.add_argument(
+            '-v', '--verbose', help='Verbosity for some of the output commands', action='count', default=0)
 
-            from_time = time.fromisoformat(from_time)
+        parser.add_argument(
+            '-s', '--show', help='Show busy schedule for people', nargs='+', metavar='NAME')
 
-            to_time = ''
-            while not to_time:
-                print('\tTo? ', end='')
-                to_time = input()
-                print()
+        exclusive_group = parser.add_mutually_exclusive_group()
 
-            to_time = time.fromisoformat(to_time)
+        exclusive_group.add_argument(
+            '-d', '--delete', help='Delete a person from db')
+        exclusive_group.add_argument(
+            '-p', '--person', help='Add new person or edit an existing one in the db')
 
-            schedule.append({'from': str(from_time), 'to': str(to_time)})
+        time_group = parser.add_argument_group('time editing')
+        for key, day in enumerate(self._days):
+            time_group.add_argument(
+                f'--{day}', help=f'Busy time range for {calendar.day_name[key]}', nargs=2, action='append', metavar=('FROM', 'TO'))
 
-    def input_schedule(self, person: dict):
-        schedule = {}
-        for (key, day) in enumerate(day_name):
-            print(f'\tSchedule of {person["name"]} for {day}:')
-            schedule[key] = []
-            self.input_times(schedule[key])
-        person['schedule'] = schedule
+        self._args = parser.parse_args()
 
-    def input_people(self, people: list):
-        while True:
-            print('Person name? (Enter to skip) ', end='')
-            name = input()
+        return self._args
 
-            if not name:
-                break
+    def process(self, people: list) -> Union[list, None]:
+        '''Process script arguments'''
 
-            person = {'name': name}
-            self.input_schedule(person)
+        self._people = people
 
-            people.append(person)
+        commands = ['list', 'show', 'delete', 'add']
 
+        for c in commands:
+            people = getattr(self, f'_{c}')()
+            if isinstance(people, list):
+                return people
+
+    def _list(self) -> None:
+        '''Show DB'''
+
+        if self._args.list:
+            if self._args.verbose >= 1:
+                pprint.pprint(self._people)
+            elif self._args.verbose == 0:
+                [print(person['name']) for person in self._people]
+
+    def _delete(self) -> Union[list, None]:
+        '''Delete person from DB'''
+
+        if self._args.delete:
+            for key, person in enumerate(self._people):
+                if person['name'] == self._args.delete:
+                    del self._people[key]
+                    print('Deleted')
+                    return self._people
+            else:
+                print('Not found')
+
+    def _add(self) -> Union[list, None]:
+        '''Add new person or edit existing'''
+
+        if self._args.person:
+            new_person = {'name': self._args.person, 'schedule': {}}
+            for key, day in enumerate(self._days):
+                try:
+                    new_person['schedule'][key] = getattr(self._args, day)
+                except AttributeError:
+                    continue
+
+            for key, person in enumerate(self._people):
+                if person['name'] == new_person['name']:
+                    self._people[key] = new_person
+                    break
+            else:
+                self._people.append(new_person)
+
+            print('Saved!')
+            pprint.pprint(self._people)
+            return self._people
+
+    def _show(self) -> None:
+        '''Show schedule'''
+
+        if self._args.show:
+            for key, day in enumerate(self._days):
+                mix_schedule = Schedule()
+                for person in self._people:
+                    if person['name'] not in self._args.show:
+                        continue
+
+                    try:
+                        ranges = person['schedule'][str(key)]
+                        if ranges:
+                            schedule = Schedule(ranges)
+                            mix_schedule += schedule
+                    except KeyError:
+                        print(f'No schedule for {day} of {person["name"]}')
+
+                print(f'{day}\n{mix_schedule}')
