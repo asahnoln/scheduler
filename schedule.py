@@ -8,10 +8,14 @@ class BusyRange:
 
     from_time - range start
     to_time - range end
-    '''
-    TimeType = Union[str, time]
 
-    def __init__(self, from_time: TimeType, to_time: TimeType) -> None:
+    >>> BusyRange('09:00', '12:00')
+    BusyRange(datetime.time(9, 0), datetime.time(12, 0))
+    '''
+
+    Time = Union[str, time]
+
+    def __init__(self, from_time: Time, to_time: Time) -> None:
         self.from_time = from_time if isinstance(
             from_time, time) else time.fromisoformat(from_time)
         self.to_time = to_time if isinstance(
@@ -24,8 +28,21 @@ class BusyRange:
 
 class Schedule:
     '''Data for storing and manipulating several busy time ranges.
+
+    Pass a list of tuples with time ranges:
+    >>> Schedule([('09:00', '12:00'), ('14:00', '16:00')])
+    Schedule([BusyRange(datetime.time(9, 0), datetime.time(12, 0)), BusyRange(datetime.time(14, 0), datetime.time(16, 0))])
+
+    Summation of schedules results in a new schedule with all ranges:
+    >>> Schedule([('09:00', '15:00'), ('14:00', '16:00')]) + Schedule([('18:00', '20:00')])
+    Schedule([BusyRange(datetime.time(9, 0), datetime.time(16, 0)), BusyRange(datetime.time(18, 0), datetime.time(20, 0))])
+
+    If time ranges overlap, a new time range created with the lowest and highest time signatures from overlapping ranges (note the second schedule)
+    >>> Schedule([('09:00', '15:00'), ('14:00', '16:00')]) + Schedule([('11:00', '17:00')])
+    Schedule([BusyRange(datetime.time(9, 0), datetime.time(17, 0))])
     '''
-    Range = Union[BusyRange, tuple[BusyRange.TimeType, BusyRange.TimeType]]
+
+    Range = Union[BusyRange, tuple[BusyRange.Time, BusyRange.Time]]
     RangeList = list[Range]
 
     def __init__(self, ranges: RangeList = None) -> None:
@@ -47,7 +64,15 @@ class Schedule:
         return self.add(schedule)
 
     def append(self, busy_range: Range) -> None:
-        '''Append busy range to current range list.'''
+        '''Append busy range to current range list.
+
+        >>> schedule = Schedule([('09:00', '14:00')])
+        >>> schedule
+        Schedule([BusyRange(datetime.time(9, 0), datetime.time(14, 0))])
+        >>> schedule.append(('16:00', '18:00'))
+        >>> schedule
+        Schedule([BusyRange(datetime.time(9, 0), datetime.time(14, 0)), BusyRange(datetime.time(16, 0), datetime.time(18, 0))])
+        '''
 
         if not isinstance(busy_range, BusyRange):
             busy_range = BusyRange(*busy_range)
@@ -56,8 +81,19 @@ class Schedule:
 
     # New method from packing minutes
     def add(self, schedule: Schedule) -> Schedule:
-        '''Produce a new schedule by adding another schedule to current schedule.'''
-        all_minutes = sorted(set(self._get_all_minutes() + schedule._get_all_minutes()))
+        '''Produce a new schedule by adding another schedule to current schedule.
+
+        Summation of schedules results in a new schedule with all ranges:
+        >>> Schedule([('09:00', '15:00'), ('14:00', '16:00')]).add(Schedule([('18:00', '20:00')]))
+        Schedule([BusyRange(datetime.time(9, 0), datetime.time(16, 0)), BusyRange(datetime.time(18, 0), datetime.time(20, 0))])
+
+        If time ranges overlap, a new time range created as the mix of overlapping ranges (note the second schedule)
+        >>> Schedule([('09:00', '15:00'), ('14:00', '16:00')]).add(Schedule([('11:00', '17:00')]))
+        Schedule([BusyRange(datetime.time(9, 0), datetime.time(17, 0))])
+        '''
+
+        all_minutes = sorted(
+            set(self._get_all_minutes() + schedule._get_all_minutes()))
         new_schedule = Schedule()
 
         start = None
@@ -75,7 +111,7 @@ class Schedule:
 
         if start and end:
             new_schedule.append((time(*start), time(*end)))
-        
+
         return new_schedule
 
     def _get_all_minutes(self) -> list[tuple[int, int]]:
@@ -94,32 +130,11 @@ class Schedule:
                     minutes.append((h, m))
         return minutes
 
-    # Old method with checking crosses
-    # def add(self, schedule: Schedule) -> Schedule:
-    #     '''Produce a new schedule by adding another schedule to current schedule.'''
-
-    #     all_ranges = self._ranges.copy()
-    #     all_ranges.extend(schedule._ranges)
-    #     all_ranges.sort(key=lambda busy_range: busy_range.from_time)
-
-    #     # Linear search for crossings of time ranges
-    #     new_ranges = []
-    #     new_from_time = None
-    #     for key, busy_range in enumerate(all_ranges):
-    #         if not new_from_time:
-    #             new_from_time = busy_range.from_time
-
-    #         if key == len(all_ranges) - 1 or busy_range.to_time < all_ranges[key + 1].from_time:
-    #             new_ranges.append(BusyRange(new_from_time, busy_range.to_time))
-    #             new_from_time = None
-
-    #     return Schedule(new_ranges)
-
-    def _convert_ranges(self, ranges: RangeList) -> list[BusyRange]:
+    @staticmethod
+    def _convert_ranges(ranges: RangeList) -> list[BusyRange]:
         converted_ranges = []
         for busy_range in ranges:
             if not isinstance(busy_range, BusyRange):
                 busy_range = BusyRange(*busy_range)
             converted_ranges.append(busy_range)
         return converted_ranges
-
