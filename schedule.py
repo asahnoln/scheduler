@@ -2,6 +2,32 @@ from __future__ import annotations
 from datetime import time
 from typing import Union
 
+__all__ = ['BusyRange', 'Schedule']
+
+TimeTuple = tuple[int, int]
+Time = Union[str, time]
+
+
+def get_time_tuple(t: time) -> TimeTuple:
+    '''Convert time object to tuple (int, int)
+
+    >>> get_time_tuple(time(hour=12, minute=30))
+    (12, 30)
+    '''
+    return (t.hour, t.minute)
+
+
+def convert_str_to_time(t: Time) -> time:
+    '''Convert possible string to time object
+
+    >>> convert_str_to_time('09:00')
+    datetime.time(9, 0)
+
+    >>> convert_str_to_time(time(hour=9, minute=0))
+    datetime.time(9, 0)
+    '''
+    return t if isinstance(t, time) else time.fromisoformat(t)
+
 
 class BusyRange:
     '''Data for busy time range.
@@ -11,19 +37,36 @@ class BusyRange:
 
     >>> BusyRange('09:00', '12:00')
     BusyRange(datetime.time(9, 0), datetime.time(12, 0))
+
+    >>> BusyRange(time(hour=11, minute=30), time(hour=15, minute=45))
+    BusyRange(datetime.time(11, 30), datetime.time(15, 45))
     '''
 
-    Time = Union[str, time]
-
     def __init__(self, from_time: Time, to_time: Time) -> None:
-        self.from_time = from_time if isinstance(
-            from_time, time) else time.fromisoformat(from_time)
+        self.from_time = convert_str_to_time(from_time)
         self.to_time = to_time if isinstance(
             to_time, time) else time.fromisoformat(to_time)
 
     def __repr__(self) -> str:
-        # TODO: Use repr str instead of repr?
         return f'BusyRange({self.from_time!r}, {self.to_time!r})'
+
+    def get_from_time_tuple(self) -> TimeTuple:
+        '''Get starting time in a tuple format (int, int)
+
+        >>> BusyRange('09:00', '12:00').get_from_time_tuple()
+        (9, 0)
+        '''
+
+        return get_time_tuple(self.from_time)
+
+    def get_to_time_tuple(self) -> TimeTuple:
+        '''Get starting time in a tuple format (int, int)
+
+        >>> BusyRange('09:00', '12:00').get_to_time_tuple()
+        (12, 0)
+        '''
+
+        return get_time_tuple(self.to_time)
 
 
 class Schedule:
@@ -42,13 +85,13 @@ class Schedule:
     Schedule([BusyRange(datetime.time(9, 0), datetime.time(17, 0))])
     '''
 
-    Range = Union[BusyRange, tuple[BusyRange.Time, BusyRange.Time]]
+    Range = Union[BusyRange, tuple[Time, Time]]
     RangeList = list[Range]
 
     def __init__(self, ranges: RangeList = None) -> None:
         if not ranges:
             ranges = []
-        self._ranges = self._convert_ranges(ranges)
+        self._ranges = convert_ranges(ranges)
 
     def __str__(self) -> str:
         text = ''
@@ -67,8 +110,6 @@ class Schedule:
         '''Append busy range to current range list.
 
         >>> schedule = Schedule([('09:00', '14:00')])
-        >>> schedule
-        Schedule([BusyRange(datetime.time(9, 0), datetime.time(14, 0))])
         >>> schedule.append(('16:00', '18:00'))
         >>> schedule
         Schedule([BusyRange(datetime.time(9, 0), datetime.time(14, 0)), BusyRange(datetime.time(16, 0), datetime.time(18, 0))])
@@ -114,11 +155,11 @@ class Schedule:
 
         return new_schedule
 
-    def _get_all_minutes(self) -> list[tuple[int, int]]:
+    def _get_all_minutes(self) -> list[TimeTuple]:
         minutes = []
         for busy_range in self._ranges:
-            start = [int(x) for x in str(busy_range.from_time).split(':')]
-            end = [int(x) for x in str(busy_range.to_time).split(':')]
+            start = busy_range.get_from_time_tuple()
+            end = busy_range.get_to_time_tuple()
 
             for h in range(start[0], end[0] + 1):
                 for m in range(0, 60):
@@ -130,11 +171,17 @@ class Schedule:
                     minutes.append((h, m))
         return minutes
 
-    @staticmethod
-    def _convert_ranges(ranges: RangeList) -> list[BusyRange]:
-        converted_ranges = []
-        for busy_range in ranges:
-            if not isinstance(busy_range, BusyRange):
-                busy_range = BusyRange(*busy_range)
-            converted_ranges.append(busy_range)
-        return converted_ranges
+
+def convert_ranges(ranges: Schedule.RangeList) -> list[BusyRange]:
+    '''Convert list of possible time tuples to list of Busy Ranges
+
+    >>> convert_ranges([('09:00', '12:00'), ('13:00', '15:00')])
+    [BusyRange(datetime.time(9, 0), datetime.time(12, 0)), BusyRange(datetime.time(13, 0), datetime.time(15, 0))]
+    '''
+
+    converted_ranges = []
+    for busy_range in ranges:
+        if not isinstance(busy_range, BusyRange):
+            busy_range = BusyRange(*busy_range)
+        converted_ranges.append(busy_range)
+    return converted_ranges
